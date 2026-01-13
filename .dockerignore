@@ -1,0 +1,11 @@
+__pycache__/
+*.pyc
+.venv/
+venv/
+.env
+.git/
+.streamlit/
+*.log
+.DS_Store
+dist/
+build/
