@@ -1,4 +1,4 @@
-tu-dominio.com {
+:80 {
 
   # Compression
   encode gzip
