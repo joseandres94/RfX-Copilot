@@ -1,6 +1,6 @@
-## RfX Copilot — Multi‑Agent system for Sales teams support for demo generation
+## RfX Copilot — Multi‑Agent RAG system for Sales teams support for demo generation
 
-An AI copilot that ingests complex RfX documents, builds deal intelligence, designs a demo proposal, and lets sales teams interrogate everything through a rich conversational UI.
+An AI copilot that ingests complex RfX documents, builds deal intelligence, designs a demo proposal, and lets sales teams interrogate everything through a rich conversational UI built on top of a retrieval‑augmented generation (RAG) pipeline.
 
 > ⚠️ **Disclaimer**: This is a prototype for evaluation and demo purposes only made for Tacton. It is **not** a production system, does not provide legal, commercial or financial advice, and must be reviewed by security, compliance and legal teams before any real‑world use.
 
@@ -12,6 +12,7 @@ An AI copilot that ingests complex RfX documents, builds deal intelligence, desi
 - **Deal Intelligence Card (DIC)**: extract requirements and key metadata into a concise, executive‑level view of the opportunity.
 - **Demo Brief generation**: propose a demo storyline and solution blueprint aligned with the RfX requirements.
 - **Gap analysis**: highlight gaps and risks between customer requirements and the proposed solution.
+- **RAG‑based QA**: retrieval‑augmented answers grounded in the original RfX document and in the derived artifacts (DIC, demo brief, gap analysis), not just in generic LLM knowledge.
 - **Conversational copilot**: ask questions about the deal and RfX via **text** or **voice**; get grounded answers.
 - **Multilingual**: English / Svenska (UI + model prompts).
 
@@ -87,6 +88,11 @@ root/
 - ChromaDB as a vector store, with a dedicated directory (chroma_db/) to keep the HNSW index and metadata.
 - Structured JSONL logging in data/logs/ with per‑deal events and error reporting.
 
+### RAG‑centric knowledge layer
+- All RfX chunks and derived artifacts are embedded and stored in ChromaDB.
+- The Chat Agent uses retrieval‑augmented generation (RAG) over this knowledge layer (RfX chunks + DIC + demo brief + gaps) to answer user questions.
+- This keeps answers grounded in the actual opportunity, not in generic LLM knowledge.
+
 ### Multi‑Agent RfX Pipeline
 
 The backend implements a sequential, multi‑agent pipeline (`PipelineRunner`) that processes each uploaded RfX:
@@ -114,6 +120,7 @@ The **Chat Agent** then uses all of these artifacts (deal context, RfX chunks, D
   - Structured list of gaps and risks, with severity levels and supporting context.
 - **Conversational copilot**
   - Chat with the copilot about any aspect of the RfX or generated artifacts.
+  - RAG‑grounded answers combining the original RfX chunks, the DIC, the demo brief and the gap analysis.
   - Supports both **text input** and **voice input** (STT), and optional **voice output** (TTS).
 - **Bilingual UX**
   - English / Svenska UI, plus language selector and prompt conditioning for LLM calls.
@@ -229,7 +236,7 @@ The project uses `pydantic-settings` and a layered configuration model. The most
    - As artifacts become available, they appear as rich assistant messages in the chat (DIC, Demo Brief, Gap Analysis).
 4. **Chat with the copilot**
    - Ask questions via the **chat input** (text) or use the **microphone** to send audio.
-   - The backend uses RAG over RfX chunks + DIC + demo brief + gaps to generate grounded answers.
+   - The backend uses a RAG pipeline over RfX chunks + DIC + demo brief + gaps to generate grounded answers.
    - Optionally play back answers using TTS where enabled.
 5. **Start new conversations**
    - Use the **“New Conversation”** button in the sidebar to reset the session and/or process a different RfX.
@@ -248,7 +255,7 @@ The project uses `pydantic-settings` and a layered configuration model. The most
   Returns current deal status, pipeline step, events and (when ready) markdown outputs: DIC, demo brief, gap analysis.
 
 - **`POST /chat`** (JSON: `session_id`, `text_message`, `language`, optional `deal_id`)  
-  Generates a grounded answer from the Chat Agent: `{ "answer": "...", "stage": "qa" | "welcome" | ... }`.  
+  Generates a grounded, RAG‑based answer from the Chat Agent: `{ "answer": "...", "stage": "qa" | "welcome" | ... }`.  
   If the deal is still processing or in error, appropriate HTTP 409 responses are returned.
 
 - **`POST /stt`** (multipart form: `file`)  
